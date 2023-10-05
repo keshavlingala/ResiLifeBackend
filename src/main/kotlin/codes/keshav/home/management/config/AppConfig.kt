@@ -2,24 +2,33 @@ package codes.keshav.home.management.config
 
 import codes.keshav.home.management.properties.AppProperties
 import codes.keshav.home.management.retrofit.Postgrest
+import codes.keshav.home.management.service.JwtFilter
+import codes.keshav.home.management.utils.JwtTokenUtil
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.KotlinFeature
 import com.fasterxml.jackson.module.kotlin.KotlinModule
-import com.nimbusds.jose.jwk.source.ImmutableSecret
 import okhttp3.OkHttpClient
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.security.authentication.AuthenticationManager
-import org.springframework.security.oauth2.jwt.NimbusJwtDecoder
-import org.springframework.security.oauth2.jwt.NimbusJwtEncoder
+import org.springframework.http.HttpMethod
+import org.springframework.security.config.annotation.web.builders.HttpSecurity
+import org.springframework.security.config.http.SessionCreationPolicy
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
+import org.springframework.security.crypto.password.PasswordEncoder
+import org.springframework.security.web.SecurityFilterChain
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
+import org.springframework.web.cors.CorsConfiguration
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource
+import org.springframework.web.filter.CorsFilter
 import retrofit2.Retrofit
 import retrofit2.converter.jackson.JacksonConverterFactory
-import javax.crypto.spec.SecretKeySpec
+
 
 @Configuration
 class AppConfig(
-	val appProperties: AppProperties
+	val appProperties: AppProperties,
+	val jwtTokenUtil: JwtTokenUtil
 ) {
 
 	@Bean
@@ -51,18 +60,40 @@ class AppConfig(
 	}
 
 	@Bean
-	fun authenticationManager(): AuthenticationManager {
-		return AuthenticationManager { authentication ->
-			authentication
-		}
+	fun passwordEncoder(): PasswordEncoder {
+		return BCryptPasswordEncoder()
 	}
 
-	private val jwtKey = "secret123"
-	private val secret = SecretKeySpec(jwtKey.toByteArray(), "HmacSHA256")
+	@Bean
+	@Throws(Exception::class)
+	fun filterChain(http: HttpSecurity): SecurityFilterChain {
+		http
+			.csrf { it.disable() }
+			.cors { it.disable() }
+			.authorizeHttpRequests { requests ->
+				requests
+					.requestMatchers("/auth/**").permitAll()
+					.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+					.anyRequest().authenticated()
+			}
+			.sessionManagement { session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
+			.addFilterBefore(JwtFilter(postgRest(), jwtTokenUtil), UsernamePasswordAuthenticationFilter::class.java)
+		return http.build()
+	}
 
 	@Bean
-	fun encoder() = NimbusJwtEncoder(ImmutableSecret(secret))
+	fun corsFilter(): CorsFilter {
+		val source = UrlBasedCorsConfigurationSource()
+		val config = CorsConfiguration()
+		config.allowCredentials = false
+		config.addAllowedOrigin("*")
+		config.addAllowedHeader("*")
+		config.addAllowedMethod("GET")
+		config.addAllowedMethod("POST")
+		config.addAllowedMethod("PUT")
+		config.addAllowedMethod("DELETE")
+		source.registerCorsConfiguration("/**", config)
+		return CorsFilter(source)
+	}
 
-	@Bean
-	fun decoder() = NimbusJwtDecoder.withSecretKey(secret).build()
 }

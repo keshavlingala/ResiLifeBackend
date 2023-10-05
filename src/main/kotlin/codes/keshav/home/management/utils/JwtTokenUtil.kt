@@ -1,44 +1,45 @@
 package codes.keshav.home.management.utils
 
-import org.springframework.security.oauth2.jwt.*
+import com.auth0.jwt.JWT
+import com.auth0.jwt.algorithms.Algorithm
+import com.auth0.jwt.exceptions.JWTDecodeException
+import com.auth0.jwt.exceptions.JWTVerificationException
 import org.springframework.stereotype.Component
-import java.time.Instant
-import java.time.temporal.ChronoUnit
+import java.util.*
 
 
 @Component
 class JwtTokenUtil(
-	private val jwtEncoder: JwtEncoder,
-	private val jwtDecoder: JwtDecoder,
 ) {
-
-	private val expiration = 6000000L
-
+	val algorithm: Algorithm = Algorithm.HMAC256("supersuperSecretKey")
+	val issuer = "homemanagementsystem"
 	fun generateToken(email: String): String {
-		val claims = JwtClaimsSet.builder()
-			.issuedAt(Instant.now())
-			.expiresAt(Instant.now().plus(30L, ChronoUnit.DAYS))
-			.subject(email)
-			.claim("email", email)
-			.build()
-		return jwtEncoder.encode(JwtEncoderParameters.from(claims)).tokenValue
+
+		val currentTimeMillis = System.currentTimeMillis()
+		val expiryTime = Date(currentTimeMillis + 15 * 24 * 60 * 60 * 1000)
+
+		return JWT.create()
+			.withIssuer(issuer)
+			.withClaim("email", email)
+			.withExpiresAt(expiryTime)
+			.sign(algorithm)
 	}
 
-	fun getJwt(token: String): Jwt? {
-		return jwtDecoder.decode(token)
-	}
-
-	fun getEmail(token: String): String? {
+	fun verifyJWT(token: String): Boolean {
 		return try {
-			val jwt = jwtDecoder.decode(token)
-			return jwt.claims["email"] as String
-		} catch (e: Exception) {
-			null
+			val verifier = JWT.require(algorithm)
+				.withIssuer(issuer)
+				.build()
+			verifier.verify(token)
+			true
+		} catch (e: JWTVerificationException) {
+			false
+		} catch (e: JWTDecodeException) {
+			false
 		}
 	}
 
-	fun isTokenValid(token: String): Boolean {
-		val jwt = getJwt(token)
-		return jwt != null && jwt.expiresAt?.isAfter(Instant.now()) ?: false
+	fun getUserNameFromToken(token: String): String {
+		return JWT.decode(token).getClaim("email").asString()
 	}
 }
