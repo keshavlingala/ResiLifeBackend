@@ -4,6 +4,9 @@ import codes.keshav.home.management.properties.AppProperties
 import codes.keshav.home.management.retrofit.Postgrest
 import codes.keshav.home.management.service.JwtFilter
 import codes.keshav.home.management.utils.JwtTokenUtil
+import com.fasterxml.jackson.core.JsonParser
+import com.fasterxml.jackson.databind.DeserializationContext
+import com.fasterxml.jackson.databind.JsonDeserializer
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.KotlinFeature
@@ -23,6 +26,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource
 import org.springframework.web.filter.CorsFilter
 import retrofit2.Retrofit
 import retrofit2.converter.jackson.JacksonConverterFactory
+import java.time.Instant
 
 
 @Configuration
@@ -33,8 +37,19 @@ class AppConfig(
 
 	@Bean
 	fun objectMapper(): ObjectMapper {
+		val javaTimeModule = JavaTimeModule()
+		javaTimeModule.addDeserializer(
+			Instant::class.java,
+			object : JsonDeserializer<Instant>() {
+				override fun deserialize(p: JsonParser, ctxt: DeserializationContext): Instant {
+					val timestamp = p.text
+					return Instant.parse(timestamp.substring(0, 26) + "Z")
+				}
+			}
+		)
+
 		return ObjectMapper()
-			.registerModule(JavaTimeModule())
+			.registerModule(javaTimeModule)
 			.registerModule(
 				KotlinModule.Builder()
 					.withReflectionCacheSize(512)
@@ -45,8 +60,8 @@ class AppConfig(
 					.configure(KotlinFeature.StrictNullChecks, false)
 					.build()
 			)
-
 	}
+
 
 	@Bean
 	fun postgRest(): Postgrest {

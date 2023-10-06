@@ -43,4 +43,8 @@ class AuthService(
 			return JwtResponse(jwtTokenUtil.generateToken(userData.email))
 		}
 	}
+
+	fun updateUser(user: UserData) {
+		postgrest.updateUser(user).validatedExecute()
+	}
 }
