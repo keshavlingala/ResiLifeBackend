@@ -4,10 +4,12 @@ import codes.keshav.home.management.properties.AppProperties
 import codes.keshav.home.management.retrofit.Postgrest
 import codes.keshav.home.management.service.JwtFilter
 import codes.keshav.home.management.utils.JwtTokenUtil
+import codes.keshav.home.management.utils.Utils
 import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.databind.DeserializationContext
 import com.fasterxml.jackson.databind.JsonDeserializer
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.KotlinFeature
 import com.fasterxml.jackson.module.kotlin.KotlinModule
@@ -42,14 +44,18 @@ class AppConfig(
 			Instant::class.java,
 			object : JsonDeserializer<Instant>() {
 				override fun deserialize(p: JsonParser, ctxt: DeserializationContext): Instant {
-					val timestamp = p.text
-					return Instant.parse(timestamp.substring(0, 26) + "Z")
+					var timestamp = p.text
+					if (!timestamp.endsWith("Z")) {
+						timestamp += "Z"
+					}
+					return Instant.parse(timestamp)
 				}
 			}
 		)
 
-		return ObjectMapper()
+		val mapper = ObjectMapper()
 			.registerModule(javaTimeModule)
+			.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
 			.registerModule(
 				KotlinModule.Builder()
 					.withReflectionCacheSize(512)
@@ -60,6 +66,8 @@ class AppConfig(
 					.configure(KotlinFeature.StrictNullChecks, false)
 					.build()
 			)
+		Utils.objectMapper = mapper
+		return mapper
 	}
 
 
@@ -88,6 +96,7 @@ class AppConfig(
 			.authorizeHttpRequests { requests ->
 				requests
 					.requestMatchers("/auth/**").permitAll()
+					.requestMatchers("/ws/**").permitAll()
 					.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 					.anyRequest().authenticated()
 			}

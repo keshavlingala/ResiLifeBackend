@@ -1,5 +1,6 @@
 package codes.keshav.home.management.dto
 
+import codes.keshav.home.management.dto.response.Meta
 import codes.keshav.home.management.dto.response.UserDataResponse
 import java.util.*
 
@@ -9,7 +10,7 @@ data class UserData(
 	val firstName: String,
 	val lastName: String,
 	var apartmentId: UUID?,
-	val meta: Any?
+	val meta: Meta?
 ) {
 	fun toResponse(): UserDataResponse {
 		return UserDataResponse(email, firstName, lastName, meta, apartmentId)

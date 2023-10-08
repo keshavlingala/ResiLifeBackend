@@ -30,6 +30,7 @@ dependencies {
     implementation 'com.squareup.retrofit2:retrofit:2.9.0'
     implementation("com.auth0:java-jwt:3.18.2")
     implementation("org.springframework.boot:spring-boot-starter-security")
+    implementation("org.springframework.boot:spring-boot-starter-websocket")
 }
 
 tasks.withType(KotlinCompile) {

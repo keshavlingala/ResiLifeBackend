@@ -45,6 +45,6 @@ class AuthService(
 	}
 
 	fun updateUser(user: UserData) {
-		postgrest.updateUser(user).validatedExecute()
+		postgrest.updateUser(EqualParam(user.email), user.toResponse()).validatedExecute()
 	}
 }

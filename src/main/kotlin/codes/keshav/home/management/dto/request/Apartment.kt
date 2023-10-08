@@ -12,6 +12,18 @@ data class Apartment(
 	val name: String,
 	val picture: String?,
 	var members: MutableList<String>?, // List of user emails
-	val payload: Any?,
+	val payload: Payload?,
 	val createDate: Instant?
+)
+
+data class Payload(
+	val owner: String,
+	val notes: List<Note>? = null
+)
+
+data class Note(
+	val title: String,
+	val content: String,
+	val author: String,
+	val createDate: Instant = Instant.now()
 )

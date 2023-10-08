@@ -6,6 +6,11 @@ data class UserDataResponse(
 	val email: String,
 	val firstName: String?,
 	val lastName: String?,
-	val meta: Any?,
+	val meta: Meta?,
 	val apartmentId: UUID?
+)
+
+data class Meta(
+	val splitwiseApiKey: String?,
+	val canvasApiKey: String?
 )
