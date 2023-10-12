@@ -1,6 +1,7 @@
 package codes.keshav.home.management.socket
 
 import codes.keshav.home.management.dto.EqualParam
+import codes.keshav.home.management.dto.SocketMessageType
 import codes.keshav.home.management.dto.UserData
 import codes.keshav.home.management.dto.response.UserDataResponse
 import codes.keshav.home.management.retrofit.Postgrest
@@ -17,15 +18,28 @@ class UserSocketHandler(
 	val postgrest: Postgrest
 ) : TextWebSocketHandler() {
 	override fun handleTextMessage(session: WebSocketSession, message: TextMessage) {
-		val userData = message.payload.getObject<UserDataResponse>()
+		val msg = message.payload.getObject<SocketMessageType<UserDataResponse>>()
 		println("Received message: ${message.payload}")
-		if (userData == null) {
+		if (msg == null) {
 			println("Invalid message received")
 			return
 		}
-		val res = postgrest.updateUser(EqualParam(userData.email), userData).validatedExecute().firstOrNull()
-			?: throw Exception("User update failed")
-		session.sendMessage(TextMessage(res.toResponse().toJsonString()))
+		when (msg.type) {
+			"update" -> {
+				val res = postgrest.updateUser(EqualParam(msg.data.email), msg.data).validatedExecute().firstOrNull()
+					?: throw Exception("User update failed")
+				sendToUser("update", res.toResponse())
+			}
+		}
+	}
+
+	private fun sendToUser(type: String, user: UserDataResponse) {
+		val message = SocketMessageType(type, user).toJsonString()
+		try {
+			sessionMap[user.email]?.sendMessage(TextMessage(message))
+		} catch (e: Exception) {
+			println("Error sending message to user: ${user.email}")
+		}
 	}
 
 	private val sessionMap = mutableMapOf<String, WebSocketSession>()

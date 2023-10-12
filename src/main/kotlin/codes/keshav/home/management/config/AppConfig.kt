@@ -2,6 +2,7 @@ package codes.keshav.home.management.config
 
 import codes.keshav.home.management.properties.AppProperties
 import codes.keshav.home.management.retrofit.Postgrest
+import codes.keshav.home.management.retrofit.SplitWiseApi
 import codes.keshav.home.management.service.JwtFilter
 import codes.keshav.home.management.utils.JwtTokenUtil
 import codes.keshav.home.management.utils.Utils
@@ -118,6 +119,16 @@ class AppConfig(
 		config.addAllowedMethod("DELETE")
 		source.registerCorsConfiguration("/**", config)
 		return CorsFilter(source)
+	}
+
+	@Bean
+	fun splitwiseApi(): SplitWiseApi {
+		return Retrofit.Builder()
+			.baseUrl("https://secure.splitwise.com/api/v3.0/")
+			.addConverterFactory(JacksonConverterFactory.create(objectMapper()))
+			.client(OkHttpClient.Builder().build())
+			.build()
+			.create(SplitWiseApi::class.java)
 	}
 
 }

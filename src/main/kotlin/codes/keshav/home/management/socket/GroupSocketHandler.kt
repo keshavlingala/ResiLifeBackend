@@ -1,6 +1,7 @@
 package codes.keshav.home.management.socket
 
 import codes.keshav.home.management.dto.EqualParam
+import codes.keshav.home.management.dto.SocketMessageType
 import codes.keshav.home.management.dto.UserData
 import codes.keshav.home.management.dto.request.Apartment
 import codes.keshav.home.management.retrofit.Postgrest
@@ -20,15 +21,20 @@ class GroupSocketHandler(
 ) : TextWebSocketHandler() {
 	override fun handleTextMessage(session: WebSocketSession, message: TextMessage) {
 		println("Received message: ${message.payload}")
-		val groupData = message.payload.getObject<Apartment>()
-		if (groupData == null) {
+		val msg = message.payload.getObject<SocketMessageType<Apartment>>()
+		if (msg == null) {
 			println("Invalid message received")
 			return
 		}
-		val res = postgrest.updateApt(EqualParam(groupData.apartmentId.toString()), groupData)
-			.validatedExecute().firstOrNull()
-			?: throw Exception("Apartment update failed")
-		updateApartment(res)
+		when (msg.type) {
+			"update" -> {
+				val res = postgrest.updateApt(EqualParam(msg.data.apartmentId.toString()), msg.data)
+					.validatedExecute().firstOrNull()
+					?: throw Exception("Apartment update failed")
+				updateApartment("update", res)
+			}
+		}
+
 	}
 
 	private val sessionMap = mutableMapOf<UUID, MutableSet<WebSocketSession>>()
@@ -56,8 +62,11 @@ class GroupSocketHandler(
 		}
 	}
 
-	fun updateApartment(apartment: Apartment) {
-		val message = apartment.toJsonString()
+	fun updateApartment(type: String, apartment: Apartment) {
+		val message = SocketMessageType(
+			type,
+			apartment
+		).toJsonString()
 		try {
 			sessionMap[apartment.apartmentId]?.forEach {
 				it.sendMessage(TextMessage(message))
