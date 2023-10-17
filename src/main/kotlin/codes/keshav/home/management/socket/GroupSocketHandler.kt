@@ -4,6 +4,7 @@ import codes.keshav.home.management.dto.EqualParam
 import codes.keshav.home.management.dto.SocketMessageType
 import codes.keshav.home.management.dto.UserData
 import codes.keshav.home.management.dto.request.Apartment
+import codes.keshav.home.management.dto.request.MemberDetails
 import codes.keshav.home.management.retrofit.Postgrest
 import codes.keshav.home.management.utils.Utils.getObject
 import codes.keshav.home.management.utils.toJsonString
@@ -20,7 +21,6 @@ class GroupSocketHandler(
 	val postgrest: Postgrest
 ) : TextWebSocketHandler() {
 	override fun handleTextMessage(session: WebSocketSession, message: TextMessage) {
-		println("Received message: ${message.payload}")
 		val msg = message.payload.getObject<SocketMessageType<Apartment>>()
 		if (msg == null) {
 			println("Invalid message received")
@@ -28,10 +28,32 @@ class GroupSocketHandler(
 		}
 		when (msg.type) {
 			"update" -> {
+				println("Update message received")
 				val res = postgrest.updateApt(EqualParam(msg.data.apartmentId.toString()), msg.data)
 					.validatedExecute().firstOrNull()
 					?: throw Exception("Apartment update failed")
 				updateApartment("update", res)
+			}
+
+			"get-members" -> {
+				println("Get members message received")
+				val res = postgrest.getApt(EqualParam(msg.data.apartmentId.toString()))
+					.validatedExecute().firstOrNull()
+					?: throw Exception("Apartment update failed")
+				res.payload?.memberDetails = res.members?.map { email ->
+					val user = postgrest.getUser(EqualParam(email))
+						.validatedExecute().firstOrNull()
+						?: throw Exception("User not found")
+					MemberDetails(
+						email = user.email,
+						name = user.firstName + " " + user.lastName,
+						picture = user.meta?.picture ?: ""
+					)
+				}
+				val updateDB = postgrest.updateApt(EqualParam(msg.data.apartmentId.toString()), res)
+					.validatedExecute().firstOrNull()
+					?: throw Exception("Apartment update failed")
+				updateApartment("update", updateDB)
 			}
 		}
 

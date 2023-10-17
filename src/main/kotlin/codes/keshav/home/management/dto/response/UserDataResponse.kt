@@ -12,5 +12,6 @@ data class UserDataResponse(
 
 data class Meta(
 	val splitwiseApiKey: String?,
-	val canvasApiKey: String?
+	val canvasApiKey: String?,
+	val picture: String?
 )

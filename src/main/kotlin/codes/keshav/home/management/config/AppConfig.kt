@@ -30,43 +30,33 @@ import org.springframework.web.filter.CorsFilter
 import retrofit2.Retrofit
 import retrofit2.converter.jackson.JacksonConverterFactory
 import java.time.Instant
+import java.util.*
 
 
 @Configuration
 class AppConfig(
-	val appProperties: AppProperties,
-	val jwtTokenUtil: JwtTokenUtil
+	val appProperties: AppProperties, val jwtTokenUtil: JwtTokenUtil
 ) {
 
 	@Bean
 	fun objectMapper(): ObjectMapper {
 		val javaTimeModule = JavaTimeModule()
-		javaTimeModule.addDeserializer(
-			Instant::class.java,
-			object : JsonDeserializer<Instant>() {
-				override fun deserialize(p: JsonParser, ctxt: DeserializationContext): Instant {
-					var timestamp = p.text
-					if (!timestamp.endsWith("Z")) {
-						timestamp += "Z"
-					}
-					return Instant.parse(timestamp)
+		javaTimeModule.addDeserializer(Instant::class.java, object : JsonDeserializer<Instant>() {
+			override fun deserialize(p: JsonParser, ctxt: DeserializationContext): Instant {
+				var timestamp = p.text
+				if (!timestamp.endsWith("Z")) {
+					timestamp += "Z"
 				}
+				return Instant.parse(timestamp)
 			}
-		)
+		})
 
-		val mapper = ObjectMapper()
-			.registerModule(javaTimeModule)
-			.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+		val mapper = ObjectMapper().registerModule(javaTimeModule).disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
 			.registerModule(
-				KotlinModule.Builder()
-					.withReflectionCacheSize(512)
-					.configure(KotlinFeature.NullToEmptyCollection, false)
-					.configure(KotlinFeature.NullToEmptyMap, false)
-					.configure(KotlinFeature.NullIsSameAsDefault, false)
-					.configure(KotlinFeature.SingletonSupport, false)
-					.configure(KotlinFeature.StrictNullChecks, false)
-					.build()
-			)
+				KotlinModule.Builder().withReflectionCacheSize(512).configure(KotlinFeature.NullToEmptyCollection, false)
+					.configure(KotlinFeature.NullToEmptyMap, false).configure(KotlinFeature.NullIsSameAsDefault, false)
+					.configure(KotlinFeature.SingletonSupport, false).configure(KotlinFeature.StrictNullChecks, false).build()
+			).setTimeZone(TimeZone.getTimeZone("PST"))
 		Utils.objectMapper = mapper
 		return mapper
 	}
@@ -74,12 +64,9 @@ class AppConfig(
 
 	@Bean
 	fun postgRest(): Postgrest {
-		return Retrofit.Builder()
-			.baseUrl(appProperties.postgRest.url)
-			.addConverterFactory(JacksonConverterFactory.create(objectMapper()))
-			.client(OkHttpClient.Builder().build())
-			.build()
-			.create(Postgrest::class.java)
+		return Retrofit.Builder().baseUrl(appProperties.postgRest.url)
+			.addConverterFactory(JacksonConverterFactory.create(objectMapper())).client(OkHttpClient.Builder().build())
+			.build().create(Postgrest::class.java)
 
 	}
 
@@ -91,17 +78,10 @@ class AppConfig(
 	@Bean
 	@Throws(Exception::class)
 	fun filterChain(http: HttpSecurity): SecurityFilterChain {
-		http
-			.csrf { it.disable() }
-			.cors { it.disable() }
-			.authorizeHttpRequests { requests ->
-				requests
-					.requestMatchers("/auth/**").permitAll()
-					.requestMatchers("/ws/**").permitAll()
-					.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-					.anyRequest().authenticated()
-			}
-			.sessionManagement { session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
+		http.csrf { it.disable() }.cors { it.disable() }.authorizeHttpRequests { requests ->
+			requests.requestMatchers("/auth/**").permitAll().requestMatchers("/ws/**").permitAll()
+				.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll().anyRequest().authenticated()
+		}.sessionManagement { session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
 			.addFilterBefore(JwtFilter(postgRest(), jwtTokenUtil), UsernamePasswordAuthenticationFilter::class.java)
 		return http.build()
 	}
@@ -123,12 +103,9 @@ class AppConfig(
 
 	@Bean
 	fun splitwiseApi(): SplitWiseApi {
-		return Retrofit.Builder()
-			.baseUrl("https://secure.splitwise.com/api/v3.0/")
-			.addConverterFactory(JacksonConverterFactory.create(objectMapper()))
-			.client(OkHttpClient.Builder().build())
-			.build()
-			.create(SplitWiseApi::class.java)
+		return Retrofit.Builder().baseUrl("https://secure.splitwise.com/api/v3.0/")
+			.addConverterFactory(JacksonConverterFactory.create(objectMapper())).client(OkHttpClient.Builder().build())
+			.build().create(SplitWiseApi::class.java)
 	}
 
 }

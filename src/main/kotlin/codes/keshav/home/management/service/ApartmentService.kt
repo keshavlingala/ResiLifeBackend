@@ -40,7 +40,6 @@ class ApartmentService(
 		user.apartmentId = apartment.apartmentId
 		authService.updateUser(user)
 		userSocketHandler.updateUserData(user)
-		groupSocketHandler.updateApartment(apartment)
 		return apartment
 	}
 
@@ -65,7 +64,7 @@ class ApartmentService(
 		).validatedExecute()
 		authService.updateUser(user)
 		userSocketHandler.updateUserData(user)
-		groupSocketHandler.updateApartment(apartment)
+		groupSocketHandler.updateApartment("update", apartment)
 		return apartment
 	}
 }

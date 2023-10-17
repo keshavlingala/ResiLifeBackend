@@ -18,7 +18,8 @@ data class Apartment(
 
 data class Payload(
 	val owner: String,
-	val notes: List<Note>? = null
+	val notes: List<Note>? = null,
+	var memberDetails: List<MemberDetails?>? = null
 )
 
 data class Note(
@@ -27,4 +28,10 @@ data class Note(
 	val content: String,
 	val author: String,
 	val createDate: Instant = Instant.now()
+)
+
+data class MemberDetails(
+	val email: String,
+	val name: String,
+	val picture: String?
 )
