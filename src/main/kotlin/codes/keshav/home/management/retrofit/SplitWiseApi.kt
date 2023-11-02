@@ -18,4 +18,9 @@ interface SplitWiseApi {
 	fun getExpenses(
 		@Header("Authorization") authToken: Bearer
 	): Call<SplitWiseExpenseResponse>
+
+	@GET("get_friends")
+	fun getFriends(
+		@Header("Authorization") authToken: Bearer
+	): Call<SplitWiseUserResponse>
 }

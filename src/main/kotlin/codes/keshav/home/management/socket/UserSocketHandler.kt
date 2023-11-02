@@ -5,6 +5,7 @@ import codes.keshav.home.management.dto.SocketMessageType
 import codes.keshav.home.management.dto.UserData
 import codes.keshav.home.management.dto.response.UserDataResponse
 import codes.keshav.home.management.retrofit.Postgrest
+import codes.keshav.home.management.service.AuthService
 import codes.keshav.home.management.utils.Utils.getObject
 import codes.keshav.home.management.utils.toJsonString
 import codes.keshav.home.management.utils.validatedExecute
@@ -15,7 +16,8 @@ import org.springframework.web.socket.handler.TextWebSocketHandler
 
 @Service
 class UserSocketHandler(
-	val postgrest: Postgrest
+	val postgrest: Postgrest,
+	val authService: AuthService
 ) : TextWebSocketHandler() {
 	override fun handleTextMessage(session: WebSocketSession, message: TextMessage) {
 		val msg = message.payload.getObject<SocketMessageType<UserDataResponse>>()
@@ -28,19 +30,36 @@ class UserSocketHandler(
 			"update" -> {
 				val res = postgrest.updateUser(EqualParam(msg.data.email), msg.data).validatedExecute().firstOrNull()
 					?: throw Exception("User update failed")
-				sendToUser("update", res.toResponse())
+				updateUserData("update", res.toResponse())
+			}
+
+			"get-expenses" -> {
+				println("Get expenses message received")
+				if (msg.data.apartmentId == null) {
+					println("Apartment id is null")
+					return
+				}
+				if (msg.data.meta?.splitwiseApiKey == null) {
+					println("Splitwise api key is null")
+					return
+				}
+
+			}
+
+			"keys-update" -> {
+				println("Keys update message received")
+				val res = postgrest.updateUser(EqualParam(msg.data.email), msg.data).validatedExecute().firstOrNull()
+					?: throw Exception("User update failed")
+				updateUserData("update", res.toResponse())
+			}
+
+			else -> {
+				println("Invalid User Socket Message")
+				updateUserData("invalid", null)
 			}
 		}
 	}
 
-	private fun sendToUser(type: String, user: UserDataResponse) {
-		val message = SocketMessageType(type, user).toJsonString()
-		try {
-			sessionMap[user.email]?.sendMessage(TextMessage(message))
-		} catch (e: Exception) {
-			println("Error sending message to user: ${user.email}")
-		}
-	}
 
 	private val sessionMap = mutableMapOf<String, WebSocketSession>()
 
@@ -52,16 +71,12 @@ class UserSocketHandler(
 		session.sendMessage(TextMessage(user.toResponse().toJsonString()))
 	}
 
-	fun sendToUser(userId: String, message: String) {
-		sessionMap[userId]?.sendMessage(TextMessage(message))
-	}
-
-	fun updateUserData(user: UserData) {
-		val message = user.toResponse().toJsonString()
+	fun updateUserData(type: String, user: UserDataResponse?) {
+		val message = SocketMessageType(type, user).toJsonString()
 		try {
-			sessionMap[user.email]?.sendMessage(TextMessage(message))
+			sessionMap[user?.email]?.sendMessage(TextMessage(message))
 		} catch (e: Exception) {
-			println("Error sending message to user: ${user.email}")
+			println("Error sending message to user: ${user?.email}")
 		}
 	}
 }

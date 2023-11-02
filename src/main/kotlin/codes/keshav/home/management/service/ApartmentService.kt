@@ -39,7 +39,7 @@ class ApartmentService(
 		).validatedExecute().firstOrNull() ?: throw DataConversionException("Apartment creation failed")
 		user.apartmentId = apartment.apartmentId
 		authService.updateUser(user)
-		userSocketHandler.updateUserData(user)
+		userSocketHandler.updateUserData("update", user.toResponse())
 		return apartment
 	}
 
@@ -63,7 +63,7 @@ class ApartmentService(
 			apartment
 		).validatedExecute()
 		authService.updateUser(user)
-		userSocketHandler.updateUserData(user)
+		userSocketHandler.updateUserData("update", user.toResponse())
 		groupSocketHandler.updateApartment("update", apartment)
 		return apartment
 	}

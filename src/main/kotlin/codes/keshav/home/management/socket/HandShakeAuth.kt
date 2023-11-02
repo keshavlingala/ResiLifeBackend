@@ -7,6 +7,8 @@ import codes.keshav.home.management.service.AuthService
 import codes.keshav.home.management.utils.JwtTokenUtil
 import codes.keshav.home.management.utils.validatedExecute
 import org.springframework.http.server.ServerHttpRequest
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
+import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Component
 import org.springframework.web.socket.WebSocketHandler
 import org.springframework.web.socket.server.support.DefaultHandshakeHandler
@@ -32,6 +34,8 @@ class HandShakeAuth(
 		val email = jwtTokenUtil.getUserNameFromToken(token)
 		val user = postgrest.getUser(EqualParam(email)).validatedExecute().firstOrNull()
 			?: throw WebSocketAuthenticationException("User not found")
+		val authentication = UsernamePasswordAuthenticationToken(user, null, null)
+		SecurityContextHolder.getContext().authentication = authentication
 		attributes["token"] = token
 		attributes["user"] = user
 		return super.determineUser(request, wsHandler, attributes)
