@@ -12,9 +12,6 @@ class SplitWiseService(
 	val splitWiseApi: SplitWiseApi,
 	val authService: AuthService
 ) {
-	fun getSplitwiseData() {
-
-	}
 
 	fun getExpenses(): SplitWiseExpenseResponse {
 		val user = authService.getCurrentUser()

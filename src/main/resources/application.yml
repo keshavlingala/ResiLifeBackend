@@ -1,6 +1,10 @@
 api:
   postgRest:
     url: http://localhost:3000
+  splitwiseApi:
+    url: https://secure.splitwise.com/api/v3.0/
+  canvasApi:
+    url: https://csufullerton.instructure.com/api/v1/
 
 
 server:

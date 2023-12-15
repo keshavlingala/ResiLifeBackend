@@ -1,6 +1,7 @@
 package codes.keshav.home.management.config
 
 import codes.keshav.home.management.properties.AppProperties
+import codes.keshav.home.management.retrofit.CanvasApi
 import codes.keshav.home.management.retrofit.Postgrest
 import codes.keshav.home.management.retrofit.SplitWiseApi
 import codes.keshav.home.management.service.JwtFilter
@@ -67,7 +68,6 @@ class AppConfig(
 		return Retrofit.Builder().baseUrl(appProperties.postgRest.url)
 			.addConverterFactory(JacksonConverterFactory.create(objectMapper())).client(OkHttpClient.Builder().build())
 			.build().create(Postgrest::class.java)
-
 	}
 
 	@Bean
@@ -103,9 +103,16 @@ class AppConfig(
 
 	@Bean
 	fun splitwiseApi(): SplitWiseApi {
-		return Retrofit.Builder().baseUrl("https://secure.splitwise.com/api/v3.0/")
+		return Retrofit.Builder().baseUrl(appProperties.splitwiseApi.url)
 			.addConverterFactory(JacksonConverterFactory.create(objectMapper())).client(OkHttpClient.Builder().build())
 			.build().create(SplitWiseApi::class.java)
+	}
+
+	@Bean
+	fun canvasApi(): CanvasApi {
+		return Retrofit.Builder().baseUrl(appProperties.canvasApi.url)
+			.addConverterFactory(JacksonConverterFactory.create(objectMapper())).client(OkHttpClient.Builder().build())
+			.build().create(CanvasApi::class.java)
 	}
 
 }

@@ -19,7 +19,8 @@ data class Apartment(
 data class Payload(
 	val owner: String,
 	val notes: List<Note>? = null,
-	var memberDetails: List<MemberDetails?>? = null
+	var memberDetails: List<MemberDetails?>? = null,
+	var chatMessages: List<Any>? = null
 )
 
 data class Note(

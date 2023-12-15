@@ -4,6 +4,7 @@ import codes.keshav.home.management.dto.EqualParam
 import codes.keshav.home.management.dto.SocketMessageType
 import codes.keshav.home.management.dto.UserData
 import codes.keshav.home.management.dto.response.UserDataResponse
+import codes.keshav.home.management.retrofit.CanvasApi
 import codes.keshav.home.management.retrofit.Postgrest
 import codes.keshav.home.management.service.AuthService
 import codes.keshav.home.management.utils.Utils.getObject
@@ -17,7 +18,8 @@ import org.springframework.web.socket.handler.TextWebSocketHandler
 @Service
 class UserSocketHandler(
 	val postgrest: Postgrest,
-	val authService: AuthService
+	val authService: AuthService,
+	val canvasApi: CanvasApi
 ) : TextWebSocketHandler() {
 	override fun handleTextMessage(session: WebSocketSession, message: TextMessage) {
 		val msg = message.payload.getObject<SocketMessageType<UserDataResponse>>()
@@ -51,6 +53,10 @@ class UserSocketHandler(
 				val res = postgrest.updateUser(EqualParam(msg.data.email), msg.data).validatedExecute().firstOrNull()
 					?: throw Exception("User update failed")
 				updateUserData("update", res.toResponse())
+			}
+
+			"get-canvas-data" -> {
+				println("Get canvas data message received")
 			}
 
 			else -> {
